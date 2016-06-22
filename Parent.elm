@@ -26,6 +26,7 @@ init =
 
 type Msg
     = Paycheck Float
+    | Allowance
     | ChildMsg String Child.Msg
 
 
@@ -34,6 +35,27 @@ update msg model =
     case msg of
         Paycheck amount ->
             { model | money = model.money + amount }
+
+        Allowance ->
+            let
+                perChild =
+                    10.0
+
+                total =
+                    perChild * (Dict.size model.children |> toFloat)
+
+                giveTo =
+                    Child.update (Child.Allowance perChild)
+            in
+                if model.money - total < 0 then
+                    model
+                else
+                    { model
+                        | money =
+                            model.money - total
+                        , children =
+                            Dict.map (\_ child -> giveTo child) model.children
+                    }
 
         ChildMsg name msg' ->
             case Dict.get name model.children of
@@ -53,6 +75,7 @@ view model =
         ([ h1 [] [ text "Parent" ]
          , p [] [ "Money: $" ++ (toString model.money) |> text ]
          , button [ onClick (Paycheck 100) ] [ text "$100 paycheck!" ]
+         , button [ onClick Allowance ] [ text "Hand out allowance" ]
          , h2 [] [ text "Children" ]
          ]
             ++ (model.children |> Dict.toList |> List.map wrappedChild)

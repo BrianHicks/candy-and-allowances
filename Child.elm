@@ -32,6 +32,5 @@ view : Model -> Html Msg
 view model =
     div []
         [ p [] [ "Allowance money: $" ++ (toString model.money) |> text ]
-        , button [ onClick (Allowance 10) ] [ text "$10 allowance" ]
         , button [ onClick Candy ] [ text "Blow $5 on candy" ]
         ]
