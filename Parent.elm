@@ -20,6 +20,7 @@ init =
         Dict.fromList
             [ ( "Trevor", Child.init )
             , ( "Jane", Child.init )
+            , ( "Zort", Child.init )
             ]
     }
 
@@ -45,7 +46,7 @@ update msg model =
                     perChild * (Dict.size model.children |> toFloat)
 
                 giveTo =
-                    Child.update (Child.Allowance perChild)
+                    \_ child -> Child.update (Child.Allowance perChild) child |> fst
             in
                 if model.money - total < 0 then
                     model
@@ -54,7 +55,7 @@ update msg model =
                         | money =
                             model.money - total
                         , children =
-                            Dict.map (\_ child -> giveTo child) model.children
+                            Dict.map giveTo model.children
                     }
 
         ChildMsg name msg' ->
@@ -63,10 +64,37 @@ update msg model =
                     model
 
                 Just child ->
-                    { model
-                        | children =
-                            Dict.insert name (Child.update msg' child) model.children
-                    }
+                    let
+                        ( updated, outMsg ) =
+                            Child.update msg' child
+
+                        ( child', model' ) =
+                            updateFromChildOutMsg outMsg updated model
+
+                        children =
+                            Dict.insert name child' model'.children
+                    in
+                        { model' | children = children }
+
+
+updateFromChildOutMsg : Maybe Child.OutMsg -> Child.Model -> Model -> ( Child.Model, Model )
+updateFromChildOutMsg msg child model =
+    case msg of
+        Nothing ->
+            ( child, model )
+
+        Just (Child.NeedMoney amount) ->
+            if amount > 0 then
+                let
+                    ( child', msg' ) =
+                        Child.update (Child.Allowance amount) child
+
+                    model' =
+                        { model | money = model.money - amount }
+                in
+                    updateFromChildOutMsg msg' child' model'
+            else
+                ( child, model )
 
 
 view : Model -> Html Msg

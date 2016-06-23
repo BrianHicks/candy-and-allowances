@@ -18,14 +18,32 @@ type Msg
     | Candy
 
 
-update : Msg -> Model -> Model
+type OutMsg
+    = NeedMoney Float
+
+
+update : Msg -> Model -> ( Model, Maybe OutMsg )
 update msg model =
     case msg of
         Allowance amount ->
-            { model | money = model.money + amount }
+            ( { model | money = model.money + amount }
+            , Nothing
+            )
 
         Candy ->
-            { model | money = model.money - 5 }
+            let
+                money =
+                    model.money - 5
+
+                out =
+                    if money < 0 then
+                        money |> abs |> NeedMoney |> Just
+                    else
+                        Nothing
+            in
+                ( { model | money = money }
+                , out
+                )
 
 
 view : Model -> Html Msg
