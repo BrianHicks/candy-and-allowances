@@ -65,21 +65,43 @@ update msg model =
 
                 Just child ->
                     let
-                        ( updated, amount ) =
+                        ( updated, childMsg ) =
                             Child.update msg' child
 
-                        ( child', money ) =
-                            if amount > 0 then
-                                ( Child.update (Child.Allowance amount) updated |> fst
-                                , model.money - amount
-                                )
-                            else
-                                ( updated, model.money )
+                        ( child', model' ) =
+                            updateFromChild childMsg name updated model
 
                         children =
-                            Dict.insert name child' model.children
+                            Dict.insert name child' model'.children
                     in
-                        { model | children = children, money = money }
+                        { model' | children = children }
+
+
+updateFromChild : Maybe Child.OutMsg -> String -> Child.Model -> Model -> ( Child.Model, Model )
+updateFromChild msg name child model =
+    case msg of
+        Nothing ->
+            ( child, model )
+
+        Just (Child.NeedMoney amount) ->
+            if amount > 0 then
+                ( Child.update (Child.Allowance amount) child |> fst
+                , { model | money = model.money - amount }
+                )
+            else
+                ( child, model )
+
+        Just Child.BragAboutCandy ->
+            let
+                showOff =
+                    \name' child ->
+                        if name' == name then
+                            child
+                        else
+                            Child.update Child.SeeOthersCandy child |> fst
+            in
+                ( child
+                , { model | children = Dict.map showOff model.children })
 
 
 view : Model -> Html Msg
