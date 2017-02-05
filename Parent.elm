@@ -3,7 +3,7 @@ module Parent exposing (..)
 import Child
 import Dict exposing (Dict)
 import Html exposing (Html, text, h1, h2, h3, div, p, button)
-import Html.App as App
+import Html exposing (program)
 import Html.Events exposing (onClick)
 
 
@@ -46,7 +46,7 @@ update msg model =
                     perChild * (Dict.size model.children |> toFloat)
 
                 giveTo =
-                    \_ child -> Child.update (Child.Allowance perChild) child |> fst
+                    \_ child -> Child.update (Child.Allowance perChild) child |> Tuple.first
             in
                 if model.money - total < 0 then
                     model
@@ -58,7 +58,7 @@ update msg model =
                             Dict.map giveTo model.children
                     }
 
-        ChildMsg name msg' ->
+        ChildMsg name msg_ ->
             case Dict.get name model.children of
                 Nothing ->
                     model
@@ -66,15 +66,15 @@ update msg model =
                 Just child ->
                     let
                         ( updated, childMsg ) =
-                            Child.update msg' child
+                            Child.update msg_ child
 
-                        ( child', model' ) =
+                        ( child_, model_ ) =
                             updateFromChild childMsg name updated model
 
                         children =
-                            Dict.insert name child' model'.children
+                            Dict.insert name child_ model_.children
                     in
-                        { model' | children = children }
+                        { model_ | children = children }
 
 
 updateFromChild : Maybe Child.OutMsg -> String -> Child.Model -> Model -> ( Child.Model, Model )
@@ -85,7 +85,7 @@ updateFromChild msg name child model =
 
         Just (Child.NeedMoney amount) ->
             if amount > 0 then
-                ( Child.update (Child.Allowance amount) child |> fst
+                ( Child.update (Child.Allowance amount) child |> Tuple.first
                 , { model | money = model.money - amount }
                 )
             else
@@ -94,11 +94,11 @@ updateFromChild msg name child model =
         Just Child.BragAboutCandy ->
             let
                 showOff =
-                    \name' child ->
-                        if name' == name then
+                    \name_ child ->
+                        if name_ == name then
                             child
                         else
-                            Child.update Child.SeeOthersCandy child |> fst
+                            Child.update Child.SeeOthersCandy child |> Tuple.first
             in
                 ( child
                 , { model | children = Dict.map showOff model.children })
@@ -121,5 +121,5 @@ wrappedChild : ( String, Child.Model ) -> Html Msg
 wrappedChild ( name, model ) =
     div []
         [ h3 [] [ text name ]
-        , App.map (ChildMsg name) <| Child.view model
+        , Html.map (ChildMsg name) <| Child.view model
         ]

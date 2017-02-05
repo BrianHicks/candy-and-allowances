@@ -1,12 +1,12 @@
 module Main exposing (..)
 
-import Html.App as App
+import Html exposing (beginnerProgram)
 import Parent
 
 
-main : Program Never
+--main : Program Never
 main =
-    App.beginnerProgram
+    beginnerProgram
         { model = Parent.init
         , view = Parent.view
         , update = Parent.update
